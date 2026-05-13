@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" id="themeColor" content="#0d0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StudyOS">
+<meta name="description" content="Révise mieux, plus vite. Fiches, Quiz, Exercices, Planning.">
+<link rel="manifest" id="pwaManifest">
+<title>StudyOS — Révise plus fort</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+/* ══ TOKENS DARK ══ */
+:root {
+  --bg:#0d0f14; --surface:#13161e; --surface2:#1a1e2a; --border:#252a38;
+  --accent:#6ee7b7; --accent2:#818cf8; --accent3:#f472b6;
+  --text:#e8eaf2; --text2:#a0a8c0; --muted:#6b7280; --danger:#f87171;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+  --radius:14px; --font-head:'Syne',sans-serif; --font-body:'DM Sans',sans-serif;
+}
+/* ══ TOKENS LIGHT ══ */
+[data-theme="light"] {
+  --bg:#f0f2f8; --surface:#ffffff; --surface2:#f4f6fc; --border:#dde1f0;
+  --accent:#059669; --accent2:#6366f1; --accent3:#db2777;
+  --text:#111827; --text2:#374151; --muted:#9ca3af; --danger:#dc2626;
+  --shadow:0 4px 24px rgba(0,0,0,.08);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+[data-theme="dark"] body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.35;}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:72px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:6px;flex-shrink:0;z-index:100;transition:background .3s,border-color .3s;}
+.logo{font-family:var(--font-head);font-size:10px;font-weight:800;color:var(--accent);letter-spacing:2px;writing-mode:vertical-rl;transform:rotate(180deg);margin-bottom:20px;margin-top:8px;}
+.nav-btn{width:44px;height:44px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:19px;transition:all .2s;position:relative;}
+.nav-btn:hover{background:var(--surface2);color:var(--text);}
+.nav-btn.active{background:var(--surface2);border-color:var(--border);color:var(--accent);}
+.nav-btn .tip,.theme-toggle .tip{position:absolute;left:58px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:8px;font-size:12px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s;font-family:var(--font-body);box-shadow:var(--shadow);z-index:200;}
+.nav-btn:hover .tip,.theme-toggle:hover .tip{opacity:1;}
+.sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;gap:6px;align-items:center;}
+
+/* ── THEME TOGGLE ── */
+.theme-toggle{width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .2s;position:relative;}
+.theme-toggle:hover{border-color:var(--accent2);}
+
+/* ── INSTALL BANNER ── */
+#installBanner{display:none;position:fixed;bottom:0;left:72px;right:0;background:var(--surface);border-top:1px solid var(--border);padding:14px 20px;align-items:center;justify-content:space-between;gap:12px;z-index:500;animation:slideUp .3s ease;box-shadow:var(--shadow);}
+#installBanner.show{display:flex;}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.install-text{font-size:14px;color:var(--text2);}
+.install-text strong{color:var(--text);font-family:var(--font-head);}
+.install-actions{display:flex;gap:8px;}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;padding:28px 28px 90px;display:flex;flex-direction:column;gap:20px;}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.page-title{font-family:var(--font-head);font-size:24px;font-weight:700;color:var(--text);}
+.page-title span{color:var(--accent);}
+.badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid;}
+.badge-free{color:var(--muted);border-color:var(--border);}
+
+/* ── PANELS ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;display:none;flex-direction:column;gap:18px;animation:fadeUp .3s ease;transition:background .3s,border-color .3s;}
+.panel.active{display:flex;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── HOME ── */
+.home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:13px;}
+.home-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.home-card::before{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;}
+.home-card.c1::before{background:radial-gradient(circle at top left,rgba(110,231,183,.13),transparent 60%);}
+.home-card.c2::before{background:radial-gradient(circle at top left,rgba(129,140,248,.13),transparent 60%);}
+.home-card.c3::before{background:radial-gradient(circle at top left,rgba(244,114,182,.13),transparent 60%);}
+.home-card.c4::before{background:radial-gradient(circle at top left,rgba(251,191,36,.13),transparent 60%);}
+.home-card.c5::before{background:radial-gradient(circle at top left,rgba(56,189,248,.13),transparent 60%);}
+.home-card:hover{border-color:var(--accent2);transform:translateY(-2px);}
+.home-card:hover::before{opacity:1;}
+.card-icon{font-size:26px;margin-bottom:10px;}
+.card-title{font-family:var(--font-head);font-size:14px;font-weight:700;margin-bottom:5px;}
+.card-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;transition:background .3s;}
+.stat-num{font-family:var(--font-head);font-size:26px;font-weight:800;color:var(--accent);}
+.stat-label{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* ── FORMS ── */
+.section-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:7px;}
+textarea,.input-field{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:12px 14px;outline:none;transition:border-color .2s,background .3s;line-height:1.6;}
+textarea{resize:vertical;}
+textarea:focus,.input-field:focus{border-color:var(--accent2);}
+textarea::placeholder,.input-field::placeholder{color:var(--muted);}
+.select-input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:10px 14px;outline:none;cursor:pointer;transition:border-color .2s,background .3s;}
+.select-input:focus{border-color:var(--accent2);}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;border:none;font-family:var(--font-head);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.3px;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:#0d0f14;}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--accent2);color:var(--accent2);}
+.btn-sm{padding:7px 14px;font-size:12px;}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;}
+
+/* ── RESULT BOX ── */
+.result-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px;font-size:14px;line-height:1.75;display:none;animation:fadeUp .3s ease;}
+.result-box.show{display:block;}
+.result-box h3{font-family:var(--font-head);font-size:15px;color:var(--accent);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.result-box p{color:var(--text);margin-bottom:8px;}
+.result-box ul{padding-left:16px;}
+.result-box li{color:var(--text);margin-bottom:7px;}
+.result-box strong{color:var(--accent2);}
+
+/* ── EXERCICES ── */
+.exo-block{margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border);}
+.exo-block:last-child{border-bottom:none;margin-bottom:0;}
+.exo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.exo-num{font-family:var(--font-head);font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:1px;}
+.exo-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.exo-question{font-size:14px;color:var(--text);line-height:1.7;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
+.exo-correction{background:rgba(110,231,183,.07);border:1px solid rgba(110,231,183,.2);border-radius:9px;padding:13px;font-size:13px;color:var(--text2);margin-top:10px;display:none;line-height:1.65;animation:fadeUp .2s ease;}
+.exo-correction.show{display:block;}
+.correction-label{font-size:11px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+
+/* ── LOADER ── */
+.loader{display:none;align-items:center;gap:10px;color:var(--muted);font-size:14px;padding:14px 0;}
+.loader.show{display:flex;}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── QUIZ ── */
+.quiz-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;display:none;flex-direction:column;gap:17px;animation:fadeUp .3s ease;}
+.quiz-card.show{display:flex;}
+.question-text{font-family:var(--font-head);font-size:16px;font-weight:600;line-height:1.55;color:var(--text);}
+.options-list{display:flex;flex-direction:column;gap:9px;}
+.option-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:12px 16px;text-align:left;cursor:pointer;transition:all .2s;}
+.option-btn:hover:not(:disabled){border-color:var(--accent2);color:var(--accent2);}
+.option-btn.correct{border-color:var(--accent);background:rgba(110,231,183,.1);color:var(--accent);}
+.option-btn.wrong{border-color:var(--danger);background:rgba(248,113,113,.1);color:var(--danger);}
+.option-btn:disabled{cursor:default;}
+.feedback-msg{padding:10px 14px;border-radius:9px;font-size:13px;display:none;animation:fadeUp .2s ease;}
+.feedback-msg.show{display:block;}
+.feedback-msg.ok{background:rgba(110,231,183,.1);color:var(--accent);border:1px solid rgba(110,231,183,.3);}
+.feedback-msg.ko{background:rgba(248,113,113,.1);color:var(--danger);border:1px solid rgba(248,113,113,.3);}
+.progress-bar-wrap{background:var(--surface2);border-radius:20px;height:5px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:20px;transition:width .4s ease;}
+.score-display{text-align:center;padding:28px;display:none;flex-direction:column;align-items:center;gap:9px;animation:fadeUp .3s ease;}
+.score-display.show{display:flex;}
+.score-big{font-family:var(--font-head);font-size:52px;font-weight:800;color:var(--accent);}
+.score-label{font-size:14px;color:var(--muted);}
+
+/* ── TYPE PILLS ── */
+.type-pills{display:flex;gap:8px;flex-wrap:wrap;}
+.pill{padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--font-body);}
+.pill:hover{border-color:var(--accent2);color:var(--accent2);}
+.pill.active{border-color:var(--accent);background:rgba(110,231,183,.1);color:var(--accent);font-weight:600;}
+
+/* ── BADGES ── */
+.mode-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-head);}
+.badge-exercice{background:rgba(129,140,248,.12);color:var(--accent2);border:1px solid rgba(129,140,248,.3);}
+.badge-devoir{background:rgba(244,114,182,.1);color:var(--accent3);border:1px solid rgba(244,114,182,.3);}
+.badge-examen{background:rgba(248,113,113,.1);color:var(--danger);border:1px solid rgba(248,113,113,.3);}
+
+/* ── CHAT ── */
+.glow-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.chat-area{display:flex;flex-direction:column;gap:14px;flex:1;min-height:0;}
+.messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;max-height:400px;padding-right:4px;}
+.messages::-webkit-scrollbar{width:4px;}
+.messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.msg{display:flex;gap:9px;animation:fadeUp .25s ease;}
+.msg.user{flex-direction:row-reverse;}
+.msg-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.msg.ai .msg-avatar{background:rgba(110,231,183,.15);}
+.msg.user .msg-avatar{background:rgba(129,140,248,.15);}
+.msg-bubble{max-width:78%;padding:11px 15px;border-radius:13px;font-size:13px;line-height:1.65;}
+.msg.ai .msg-bubble{background:var(--surface2);border:1px solid var(--border);border-top-left-radius:4px;color:var(--text);}
+.msg.user .msg-bubble{background:rgba(129,140,248,.15);border:1px solid rgba(129,140,248,.3);border-top-right-radius:4px;color:var(--text);}
+.msg-bubble strong{color:var(--accent);}
+.chat-input-row{display:flex;gap:8px;}
+.chat-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--font-body);font-size:14px;padding:11px 15px;outline:none;transition:border-color .2s;}
+.chat-input:focus{border-color:var(--accent2);}
+.chat-input::placeholder{color:var(--muted);}
+
+/* ── PLANNING ── */
+.week-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+.day-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px;font-size:12px;}
+.day-name{font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--accent);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px;}
+.day-task{color:var(--text);line-height:1.5;margin-bottom:3px;font-size:12px;}
+.day-duration{color:var(--muted);font-size:11px;}
+
+/* ── MOBILE ── */
+@media(max-width:600px){
+  .main{padding:14px 14px 90px;}
+  .home-grid{grid-template-columns:1fr 1fr;}
+  .page-title{font-size:20px;}
+  .msg-bubble{max-width:88%;}
+  #installBanner{left:0;flex-direction:column;text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="logo">STUDY OS</div>
+    <button class="nav-btn active" data-page="home" onclick="goto('home',this)">🏠<span class="tip">Accueil</span></button>
+    <button class="nav-btn" data-page="fiche" onclick="goto('fiche',this)">📄<span class="tip">Fiches</span></button>
+    <button class="nav-btn" data-page="quiz" onclick="goto('quiz',this)">🧠<span class="tip">Quiz</span></button>
+    <button class="nav-btn" data-page="exercices" onclick="goto('exercices',this)">✍️<span class="tip">Exercices</span></button>
+    <button class="nav-btn" data-page="assistant" onclick="goto('assistant',this)">💬<span class="tip">Assistant</span></button>
+    <button class="nav-btn" data-page="planning" onclick="goto('planning',this)">📅<span class="tip">Planning</span></button>
+    <div class="sidebar-bottom">
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙<span class="tip">Mode clair</span></button>
+      <button class="nav-btn" id="installBtn" style="display:none" onclick="installApp()">📲<span class="tip">Installer l'app</span></button>
+    </div>
+  </nav>
+
+  <!-- ── MAIN ── -->
+  <main class="main">
+
+    <div class="topbar">
+      <div class="page-title" id="pageTitle">Bonjour 👋 <span>Prêt à bosser ?</span></div>
+      <span class="badge badge-free">Gratuit · 2/5 fiches</span>
+    </div>
+
+    <!-- ══ HOME ══ -->
+    <div class="panel active" id="page-home">
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-num">3</div><div class="stat-label">Fiches créées</div></div>
+        <div class="stat-box"><div class="stat-num">47</div><div class="stat-label">Questions répondues</div></div>
+        <div class="stat-box"><div class="stat-num">68%</div><div class="stat-label">Score moyen</div></div>
+      </div>
+      <div class="home-grid">
+        <div class="home-card c1" onclick="goto('fiche',document.querySelector('[data-page=fiche]'))"><div class="card-icon">📄</div><div class="card-title">Fiches de révision</div><div class="card-desc">Colle ton cours, l'IA crée une fiche claire et structurée.</div></div>
+        <div class="home-card c2" onclick="goto('quiz',document.querySelector('[data-page=quiz]'))"><div class="card-icon">🧠</div><div class="card-title">Quiz intelligent</div><div class="card-desc">QCM et Vrai/Faux générés depuis tes cours.</div></div>
+        <div class="home-card c3" onclick="goto('exercices',document.querySelector('[data-page=exercices]'))"><div class="card-icon">✍️</div><div class="card-title">Exercices & Examens</div><div class="card-desc">Exercices guidés, devoirs types et examens blancs avec corrections.</div></div>
+        <div class="home-card c4" onclick="goto('assistant',document.querySelector('[data-page=assistant]'))"><div class="card-icon">💬</div><div class="card-title">Assistant IA</div><div class="card-desc">Pose n'importe quelle question, l'IA explique sans tricher.</div></div>
+        <div class="home-card c5" onclick="goto('planning',document.querySelector('[data-page=planning]'))"><div class="card-icon">📅</div><div class="card-title">Mon planning</div><div class="card-desc">Planning de révision personnalisé avant ton exam.</div></div>
+      </div>
+    </div>
+
+    <!-- ══ FICHE ══ -->
+    <div class="panel" id="page-fiche">
+      <div>
+        <div class="section-label">Ton cours ou extrait</div>
+        <textarea id="ficheInput" rows="7" placeholder="Colle ici ton cours, un chapitre, ou résume le sujet…&#10;&#10;Ex : « La photosynthèse est le processus par lequel les plantes transforment la lumière solaire en énergie… »"></textarea>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" onclick="genFiche()">✨ Générer la fiche</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('ficheInput').value='';document.getElementById('ficheResult').classList.remove('show')">Effacer</button>
+      </div>
+      <div class="loader" id="ficheLoader"><div class="spinner"></div>L'IA analyse ton cours…</div>
+      <div class="result-box" id="ficheResult"></div>
+    </div>
+
+    <!-- ══ QUIZ ══ -->
+    <div class="panel" id="page-quiz">
+      <div>
+        <div class="section-label">Type de questions</div>
+        <div class="type-pills">
+          <button class="pill active" data-qtype="qcm" onclick="setQType('qcm',this)">📋 QCM</button>
+          <button class="pill" data-qtype="vf" onclick="setQType('vf',this)">⚖️ Vrai / Faux</button>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Ton cours ou sujet</div>
+        <textarea id="quizInput" rows="5" placeholder="Colle le cours dont tu veux générer un quiz…&#10;&#10;Ex : « Les grandes découvertes géographiques du XVe siècle… »"></textarea>
+      </div>
+      <div class="row">
+        <select class="select-input" id="quizNb">
+          <option value="3">3 questions</option>
+          <option value="5" selected>5 questions</option>
+          <option value="8">8 questions</option>
+        </select>
+        <button class="btn btn-primary" onclick="genQuiz()">🎯 Lancer le quiz</button>
+      </div>
+      <div class="loader" id="quizLoader"><div class="spinner"></div>Génération des questions…</div>
+      <div id="quizArea"></div>
+    </div>
+
+    <!-- ══ EXERCICES ══ -->
+    <div class="panel" id="page-exercices">
+      <div>
+        <div class="section-label">Type d'exercice</div>
+        <div class="type-pills">
+          <button class="pill active" data-etype="exercice" onclick="setEType('exercice',this)">✏️ Exercice guidé</button>
+          <button class="pill" data-etype="devoir" onclick="setEType('devoir',this)">📝 Devoir type</button>
+          <button class="pill" data-etype="examen" onclick="setEType('examen',this)">🎓 Examen blanc</button>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Matière & sujet</div>
+        <input class="input-field" id="exoMatiere" type="text" placeholder="Ex: Mathématiques — Équations du second degré">
+      </div>
+      <div class="row">
+        <div style="flex:1">
+          <div class="section-label">Niveau</div>
+          <select class="select-input" id="exoNiveau" style="width:100%">
+            <option value="college">Collège / BEPC</option>
+            <option value="lycee" selected>Lycée / Baccalauréat</option>
+            <option value="superieur">Supérieur / BTS / Licence</option>
+            <option value="concours">Concours (ENS, médecine…)</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <div class="section-label">Nombre</div>
+          <select class="select-input" id="exoNb" style="width:100%">
+            <option value="2">2 exercices</option>
+            <option value="3" selected>3 exercices</option>
+            <option value="5">5 exercices</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Contexte ou cours (optionnel)</div>
+        <textarea id="exoCours" rows="4" placeholder="Colle ton cours ou décris le contexte pour des exercices adaptés…"></textarea>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" onclick="genExercices()">✍️ Générer les exercices</button>
+        <button class="btn btn-ghost" onclick="resetExo()">Effacer</button>
+      </div>
+      <div class="loader" id="exoLoader"><div class="spinner"></div>Création de tes exercices…</div>
+      <div id="exoResult" style="display:none"></div>
+    </div>
+
+    <!-- ══ ASSISTANT ══ -->
+    <div class="panel" id="page-assistant">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="glow-dot"></div>
+        <span style="font-size:13px;color:var(--muted)">Assistant disponible · répond en quelques secondes</span>
+      </div>
+      <div class="chat-area">
+        <div class="messages" id="chatMessages">
+          <div class="msg ai">
+            <div class="msg-avatar">🤖</div>
+            <div class="msg-bubble">Salut ! Je suis ton assistant StudyOS. Pose-moi n'importe quelle question sur tes cours, je t'explique clairement — sans faire tes devoirs à ta place 😄</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chatInput" type="text" placeholder="Pose ta question ici…" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="btn btn-primary" onclick="sendChat()">→</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PLANNING ══ -->
+    <div class="panel" id="page-planning">
+      <div>
+        <div class="section-label">Ton examen ou concours</div>
+        <input class="input-field" id="examName" type="text" placeholder="Ex: Baccalauréat, BEPC, Concours ENS…">
+      </div>
+      <div class="row">
+        <div style="flex:1">
+          <div class="section-label">Date de l'examen</div>
+          <input class="input-field" id="examDate" type="date">
+        </div>
+        <div style="flex:1">
+          <div class="section-label">Heures dispo/jour</div>
+          <select class="select-input" id="hoursDay" style="width:100%">
+            <option value="1">1h par jour</option>
+            <option value="2" selected>2h par jour</option>
+            <option value="3">3h par jour</option>
+            <option value="4">4h par jour</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Matières à réviser</div>
+        <input class="input-field" id="subjects" type="text" placeholder="Ex: Maths, Physique, Histoire-Géo, Anglais…">
+      </div>
+      <button class="btn btn-primary" onclick="genPlanning()">📅 Générer mon planning</button>
+      <div class="loader" id="planLoader"><div class="spinner"></div>Création de ton planning…</div>
+      <div id="planResult" style="display:none"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- INSTALL BANNER -->
+<div id="installBanner">
+  <div class="install-text">
+    <strong>📲 Installer StudyOS</strong><br>
+    <span>Ajoute l'app sur ton écran d'accueil, sans passer par Google !</span>
+  </div>
+  <div class="install-actions">
+    <button class="btn btn-primary btn-sm" onclick="installApp()">Installer</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('installBanner').classList.remove('show')">Plus tard</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   PWA — MANIFEST + SERVICE WORKER
+═══════════════════════════════════════ */
+const manifestData = {
+  name:"StudyOS — Révise plus fort",short_name:"StudyOS",
+  description:"Fiches, Quiz, Exercices et Planning pour étudiants",
+  start_url:"./",display:"standalone",
+  background_color:"#0d0f14",theme_color:"#0d0f14",
+  orientation:"portrait-primary",
+  icons:[
+    {src:"data:image/svg+xml,"+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='36' fill='%230d0f14'/><text x='50%' y='57%' dominant-baseline='middle' text-anchor='middle' font-size='110'>📚</text></svg>`),sizes:"192x192",type:"image/svg+xml"},
+    {src:"data:image/svg+xml,"+encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%230d0f14'/><text x='50%' y='57%' dominant-baseline='middle' text-anchor='middle' font-size='300'>📚</text></svg>`),sizes:"512x512",type:"image/svg+xml"}
+  ]
+};
+const mBlob = new Blob([JSON.stringify(manifestData)],{type:'application/json'});
+document.getElementById('pwaManifest').href = URL.createObjectURL(mBlob);
+
+const swCode = `
+const CACHE='studyos-v2';
+self.addEventListener('install',e=>{self.skipWaiting();});
+self.addEventListener('activate',e=>{self.clients.claim();});
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET')return;
+  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+});`;
+const swBlob = new Blob([swCode],{type:'application/javascript'});
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob),{scope:'./'}).catch(()=>{});
+}
+
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); deferredPrompt=e;
+  document.getElementById('installBtn').style.display='flex';
+  document.getElementById('installBanner').classList.add('show');
+});
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('installBanner').classList.remove('show');
+  document.getElementById('installBtn').style.display='none';
+});
+async function installApp(){
+  if(!deferredPrompt){
+    alert('Pour installer StudyOS :\n\n📱 iPhone/iPad → Appuyer sur Partager ↗ → "Sur l\'écran d\'accueil"\n🤖 Android → Menu ⋮ → "Ajouter à l\'écran d\'accueil"');
+    return;
+  }
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt=null;
+  document.getElementById('installBanner').classList.remove('show');
+}
+
+/* ═══════════════════════════════════════
+   THEME TOGGLE
+═══════════════════════════════════════ */
+let isDark=true;
+function toggleTheme(){
+  isDark=!isDark;
+  const html=document.documentElement;
+  const btn=document.getElementById('themeBtn');
+  const meta=document.getElementById('themeColor');
+  if(isDark){
+    html.setAttribute('data-theme','dark');
+    btn.innerHTML='🌙<span class="tip">Mode clair</span>';
+    meta.content='#0d0f14';
+  } else {
+    html.setAttribute('data-theme','light');
+    btn.innerHTML='☀️<span class="tip">Mode sombre</span>';
+    meta.content='#f0f2f8';
+  }
+  localStorage.setItem('studyos-theme',isDark?'dark':'light');
+}
+(function(){
+  if(localStorage.getItem('studyos-theme')==='light') toggleTheme();
+})();
+
+/* ═══════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════ */
+const titles={
+  home:'Bonjour 👋 <span>Prêt à bosser ?</span>',
+  fiche:'Mes <span>Fiches</span>',
+  quiz:'Mode <span>Quiz</span>',
+  exercices:'Exercices & <span>Examens</span>',
+  assistant:'Assistant <span>IA</span>',
+  planning:'Mon <span>Planning</span>'
+};
+function goto(page,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(btn) btn.classList.add('active');
+  document.getElementById('pageTitle').innerHTML=titles[page]||page;
+}
+
+/* ═══════════════════════════════════════
+   API CLAUDE
+═══════════════════════════════════════ */
+
+const BACKEND_URL = "http://localhost:3000";
+
+async function callClaude(prompt, system = '') {
+  const res = await fetch(`${BACKEND_URL}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: [{ role: "user", content: prompt }],
+      system: system
+    })
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || "Erreur de l'API.";
+}
+
+
+/* ═══════════════════════════════════════
+   FICHE
+═══════════════════════════════════════ */
+async function genFiche(){
+  const cours=document.getElementById('ficheInput').value.trim();
+  if(!cours) return alert('Colle ton cours d\'abord !');
+  const loader=document.getElementById('ficheLoader');
+  const result=document.getElementById('ficheResult');
+  loader.classList.add('show'); result.classList.remove('show');
+  const prompt=`Tu es un assistant pédagogique expert. Génère une fiche de révision synthétique en français à partir de ce cours.
+Inclus : titre principal, définitions clés en gras, points essentiels en liste, résumé en 2-3 phrases.
+Cours : """${cours}"""
+Réponds directement en HTML simple (h3, ul, li, strong, p), sans introduction.`;
+  const html=await callClaude(prompt);
+  loader.classList.remove('show');
+  result.innerHTML=html; result.classList.add('show');
+}
+
+/* ═══════════════════════════════════════
+   QUIZ
+═══════════════════════════════════════ */
+let quizData=[],currentQ=0,score=0,selectedQType='qcm';
+
+function setQType(type,el){
+  selectedQType=type;
+  document.querySelectorAll('[data-qtype]').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function genQuiz(){
+  const cours=document.getElementById('quizInput').value.trim();
+  if(!cours) return alert('Colle ton cours d\'abord !');
+  const nb=document.getElementById('quizNb').value;
+  const loader=document.getElementById('quizLoader');
+  const area=document.getElementById('quizArea');
+  loader.classList.add('show'); area.innerHTML='';
+  const typeLabel=selectedQType==='qcm'?'QCM à 4 choix (une seule bonne réponse)':'Questions Vrai/Faux';
+  const prompt=`Génère exactement ${nb} questions de type ${typeLabel} en français basées sur ce cours.
+Cours : """${cours}"""
+Réponds UNIQUEMENT avec un JSON valide sans markdown.
+Format : [{"q":"question","options":["A","B","C","D"],"answer":0,"explication":"..."}]
+Pour Vrai/Faux : options=["Vrai","Faux"] et answer=0 ou 1.`;
+  const raw=await callClaude(prompt);
+  loader.classList.remove('show');
+  try{
+    quizData=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    currentQ=0; score=0; renderQuestion();
+  }catch{
+    area.innerHTML=`<p style="color:var(--danger);padding:12px">Erreur de génération. Réessaie.</p>`;
+  }
+}
+
+function renderQuestion(){
+  const area=document.getElementById('quizArea');
+  if(currentQ>=quizData.length){
+    const pct=Math.round((score/quizData.length)*100);
+    area.innerHTML=`<div class="score-display show">
+      <div class="score-big">${pct}%</div>
+      <div class="score-label">${score} / ${quizData.length} bonnes réponses</div>
+      <p style="font-size:13px;color:var(--muted);margin-top:6px">${pct>=70?'🎉 Excellent ! Continue comme ça.':pct>=50?'💪 Bien, tu peux encore progresser.':'📚 Revois ce cours et réessaie.'}</p>
+      <button class="btn btn-ghost" style="margin-top:14px" onclick="document.getElementById('quizArea').innerHTML='';quizData=[]">Nouveau quiz</button>
+    </div>`; return;
+  }
+  const q=quizData[currentQ];
+  const pct=Math.round((currentQ/quizData.length)*100);
+  area.innerHTML=`<div class="quiz-card show">
+    <div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:7px">
+        <span style="font-size:12px;color:var(--muted)">Q ${currentQ+1} / ${quizData.length}</span>
+        <span style="font-size:12px;color:var(--accent)">Score : ${score}</span>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="question-text">${q.q}</div>
+    <div class="options-list">${q.options.map((o,i)=>`<button class="option-btn" onclick="checkAnswer(${i})">${o}</button>`).join('')}</div>
+    <div class="feedback-msg" id="feedbackMsg"></div>
+    <button class="btn btn-ghost btn-sm" id="nextBtn" style="display:none;align-self:flex-end" onclick="nextQ()">Suivant →</button>
+  </div>`;
+}
+
+function checkAnswer(idx){
+  const q=quizData[currentQ];
+  document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+  document.querySelectorAll('.option-btn')[q.answer].classList.add('correct');
+  const fb=document.getElementById('feedbackMsg');
+  const nb=document.getElementById('nextBtn');
+  if(idx===q.answer){score++;fb.textContent='✅ '+(q.explication||'Bonne réponse !');fb.className='feedback-msg show ok';}
+  else{document.querySelectorAll('.option-btn')[idx].classList.add('wrong');fb.textContent='❌ '+(q.explication||'Mauvaise réponse.');fb.className='feedback-msg show ko';}
+  nb.style.display='flex';
+}
+function nextQ(){currentQ++;renderQuestion();}
+
+/* ═══════════════════════════════════════
+   EXERCICES & EXAMENS
+═══════════════════════════════════════ */
+let selectedEType='exercice';
+function setEType(type,el){
+  selectedEType=type;
+  document.querySelectorAll('[data-etype]').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+}
+function resetExo(){
+  document.getElementById('exoMatiere').value='';
+  document.getElementById('exoCours').value='';
+  const r=document.getElementById('exoResult');
+  r.style.display='none'; r.innerHTML='';
+}
+
+const exoConfig={
+  exercice:{
+    label:'exercices guidés avec sous-questions numérotées',
+    badge:'Exercice guidé',
+    badgeClass:'badge-exercice',
+    consigne:'Chaque exercice doit avoir des sous-questions (1. 2. 3.) qui guident pas à pas. Fournis une correction détaillée.'
+  },
+  devoir:{
+    label:'exercices de type devoir surveillé',
+    badge:'Devoir type',
+    badgeClass:'badge-devoir',
+    consigne:'Style devoir maison : questions progressives avec barème indicatif. Correction complète.'
+  },
+  examen:{
+    label:'exercices de type examen blanc officiel',
+    badge:'Examen blanc',
+    badgeClass:'badge-examen',
+    consigne:'Style examen officiel rigoureux. Parties distinctes, durée indicative, barème sur 20. Correction type complète.'
+  }
+};
+
+async function genExercices(){
+  const matiere=document.getElementById('exoMatiere').value.trim();
+  if(!matiere) return alert('Indique la matière et le sujet !');
+  const niveau={college:'Collège / BEPC',lycee:'Lycée / Baccalauréat',superieur:'Supérieur / BTS / Licence',concours:'Concours (ENS, médecine…)'}[document.getElementById('exoNiveau').value];
+  const nb=document.getElementById('exoNb').value;
+  const cours=document.getElementById('exoCours').value.trim();
+  const cfg=exoConfig[selectedEType];
+
+  const loader=document.getElementById('exoLoader');
+  const result=document.getElementById('exoResult');
+  loader.classList.add('show'); result.style.display='none'; result.innerHTML='';
+
+  const prompt=`Tu es un professeur expert en ${matiere} pour le niveau ${niveau}. Génère exactement ${nb} ${cfg.label} en français.
+${cours?`Cours fourni :\n"""${cours}"""\n`:''}
+${cfg.consigne}
+
+Réponds UNIQUEMENT avec un JSON valide sans markdown :
+[{
+  "titre":"Exercice 1 — Titre court",
+  "duree":"20 min",
+  "bareme":"/ 5 pts",
+  "enonce":"Énoncé complet avec toutes les questions numérotées",
+  "correction":"Correction détaillée question par question"
+}]`;
+
+  const raw=await callClaude(prompt);
+  loader.classList.remove('show');
+
+  try{
+    const exos=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    result.innerHTML=`<div style="display:flex;flex-direction:column;gap:0">
+      ${exos.map((exo,i)=>`
+      <div class="exo-block">
+        <div class="exo-header">
+          <div class="exo-num">${exo.titre||'Exercice '+(i+1)}</div>
+          <div class="exo-meta">
+            <span class="mode-badge ${cfg.badgeClass}">${cfg.badge}</span>
+            <span style="font-size:11px;color:var(--muted)">⏱ ${exo.duree||'—'} &nbsp;·&nbsp; ${exo.bareme||''}</span>
+          </div>
+        </div>
+        <div class="exo-question">${(exo.enonce||'').replace(/\n/g,'<br>')}</div>
+        <div>
+          <div class="section-label" style="margin-bottom:6px">Ta réponse (brouillon)</div>
+          <textarea rows="4" placeholder="Écris ta réponse ici avant de voir la correction…" style="margin-bottom:10px"></textarea>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="toggleCorr(this)">👁 Voir la correction</button>
+        <div class="exo-correction" id="corr-${i}">
+          <div class="correction-label">✅ Correction</div>
+          ${(exo.correction||'').replace(/\n/g,'<br>')}
+        </div>
+      </div>`).join('')}
+    </div>`;
+    result.style.display='block';
+  }catch{
+    result.innerHTML=`<p style="color:var(--danger);padding:12px">Erreur de génération. Réessaie.</p>`;
+    result.style.display='block';
+  }
+}
+
+function toggleCorr(btn){
+  const corr=btn.nextElementSibling;
+  corr.classList.toggle('show');
+  btn.textContent=corr.classList.contains('show')?'🙈 Masquer la correction':'👁 Voir la correction';
+}
+
+/* ═══════════════════════════════════════
+   ASSISTANT CHAT
+═══════════════════════════════════════ */
+const chatHistory=[];
+async function sendChat(){
+  const input=document.getElementById('chatInput');
+  const msg=input.value.trim();
+  if(!msg) return;
+  input.value='';
+  appendMsg('user',msg);
+  chatHistory.push({role:'user',content:msg});
+  const typingEl=appendMsg('ai','…');
+  const system=`Tu es StudyOS, assistant pédagogique pour élèves et étudiants francophones. Tu expliques clairement avec des exemples simples. Tu guides sans faire le travail à leur place. Tu es bienveillant, direct et motivant. Réponds toujours en français.`;
+ const res = await fetch(`${BACKEND_URL}/api/chat`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    messages: chatHistory,
+    system: system
+  })
+});
+  const data=await res.json();
+  const reply=data.content?.[0]?.text||"Je n'ai pas compris, reformule ta question.";
+  typingEl.innerHTML=fmtChat(reply);
+  chatHistory.push({role:'assistant',content:reply});
+  document.getElementById('chatMessages').scrollTop=9999;
+}
+function appendMsg(role,text){
+  const msgs=document.getElementById('chatMessages');
+  const div=document.createElement('div');
+  div.className='msg '+role;
+  div.innerHTML=`<div class="msg-avatar">${role==='ai'?'🤖':'👤'}</div><div class="msg-bubble">${fmtChat(text)}</div>`;
+  msgs.appendChild(div); msgs.scrollTop=9999;
+  return div.querySelector('.msg-bubble');
+}
+function fmtChat(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');}
+
+/* ═══════════════════════════════════════
+   PLANNING
+═══════════════════════════════════════ */
+async function genPlanning(){
+  const exam=document.getElementById('examName').value.trim();
+  const date=document.getElementById('examDate').value;
+  const hours=document.getElementById('hoursDay').value;
+  const subs=document.getElementById('subjects').value.trim();
+  if(!exam||!date||!subs) return alert('Remplis tous les champs !');
+  const loader=document.getElementById('planLoader');
+  const result=document.getElementById('planResult');
+  loader.classList.add('show'); result.style.display='none';
+  const today=new Date().toISOString().split('T')[0];
+  const prompt=`Tu es un coach scolaire. Crée un planning de révision de 7 jours.
+Examen: ${exam} | Date: ${date} | Aujourd'hui: ${today} | Heures/jour: ${hours}h | Matières: ${subs}
+Réponds UNIQUEMENT en JSON valide sans markdown.
+Format : [{"jour":"Lundi 12 Mai","taches":["Matière : Sujet (Xmin)"]}]
+Génère exactement 7 jours. Répartis intelligemment les matières.`;
+  const raw=await callClaude(prompt);
+  loader.classList.remove('show');
+  try{
+    const plan=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    result.innerHTML=`<div class="section-label" style="margin-bottom:10px">Ton planning — ${hours}h/jour</div>
+      <div class="week-grid">${plan.map(d=>`
+        <div class="day-card">
+          <div class="day-name">${d.jour}</div>
+          ${d.taches.map(t=>{const m=t.match(/\((\d+)min\)/);return`<div class="day-task">${t.replace(/\(\d+min\)/,'').trim()}</div>${m?`<div class="day-duration">⏱ ${m[1]} min</div>`:''}`}).join('')}
+        </div>`).join('')}
+      </div>`;
+    result.style.display='block';
+  }catch{
+    result.innerHTML=`<p style="color:var(--danger)">Erreur. Réessaie.</p>`;
+    result.style.display='block';
+  }
+}
+</script>
+</body>
+</html>
